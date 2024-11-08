@@ -7,6 +7,7 @@
 add_executable(Telegram WIN32 MACOSX_BUNDLE)
 init_non_host_target(Telegram)
 
+add_subdirectory(lib_ext)
 add_subdirectory(lib_rpl)
 add_subdirectory(lib_crl)
 add_subdirectory(lib_base)
@@ -23,6 +24,7 @@ add_subdirectory(codegen)
 get_filename_component(src_loc SourceFiles REALPATH)
 get_filename_component(res_loc Resources REALPATH)
 
+include_directories(lib_ext)
 include(cmake/telegram_options.cmake)
 include(cmake/lib_ffmpeg.cmake)
 include(cmake/lib_stripe.cmake)
@@ -66,6 +68,7 @@ PRIVATE
     # for example installed by libzip (https://libzip.org).
     desktop-app::external_minizip
 
+    desktop-app::lib_ext
     tdesktop::td_export
     tdesktop::td_iv
     tdesktop::td_lang

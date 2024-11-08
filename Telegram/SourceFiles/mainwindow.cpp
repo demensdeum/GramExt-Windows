@@ -50,6 +50,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QtGui/QWindow>
 
+#include "ext/Controller/Controller.h"
+
 namespace {
 
 // Code for testing languages is F7-F6-F7-F8
@@ -83,6 +85,9 @@ const char kOptionAutoScrollInactiveChat[]
 
 MainWindow::MainWindow(not_null<Window::Controller*> controller)
 : Platform::MainWindow(controller) {
+
+	GramExt::Controller::initialize();
+
 	resize(st::windowDefaultWidth, st::windowDefaultHeight);
 
 	setLocale(QLocale(QLocale::English, QLocale::UnitedStates));
