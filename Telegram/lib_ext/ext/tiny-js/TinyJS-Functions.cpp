@@ -104,18 +104,6 @@ void scStringSubstring(CScriptVar *c, void *) {
         c->getReturnVar()->setString("");
 }
 
-//void scStringCharAt(CScriptVar *c, void *) {
-//    string str = c->getParameter("this")->getString();
-//    int p = c->getParameter("pos")->getInt();
-//    if (p >= 0 && p < (int)str.length()) {
-//        const std::string outputStr = str.substr((size_t)p, (size_t)1);
-//        c->getReturnVar()->setString(outputStr);
-//    }
-//    else {
-//        c->getReturnVar()->setString("");
-//    }
-//}
-
 void scStringCharAt(CScriptVar* c, void*) {
     std::string str = c->getParameter("this")->getString();
     int pos = c->getParameter("pos")->getInt();
