@@ -115,11 +115,6 @@ void Controller::initialize() {
     std::string extensionsURLsRaw = downloadUrlToString("https://raw.githubusercontent.com/demensdeum/GramEXT-Extensions-List/refs/heads/main/extensions");
     std::vector<std::string> extensionsURLs = parseExtensionsURLs(extensionsURLsRaw);
 
-    //std::string extensionsURLs[] = {
-    //    "https://raw.githubusercontent.com/demensdeum/JokerText/refs/heads/main/extension/JokerTextMessageTransformer2.js",
-    //    "https://raw.githubusercontent.com/demensdeum/JokerText/refs/heads/main/extension/main.js"
-    //};
-
     for (std::string extensionURL : extensionsURLs) {
         std::string extension = downloadUrlToString(extensionURL);
         runScript(extension);
@@ -127,9 +122,8 @@ void Controller::initialize() {
 }
 
 std::string Controller::transformOutputText(const std::string text) {
-    //return std::string(text) + "\n\nGramEXT_OutputTextTransformerTest";
     std::string js = "TransformOutputMessage(\"" + text +"\");";
-    //std::string js = "TransformOutputMessage(\"\");";
+
     try {
         std::string output = runScript(js);
         return output;
