@@ -1,8 +1,32 @@
 #include "Controller.h"
 #include <ext/tiny-js/TinyJS.h>
+#include <ext/tiny-js/TinyJS_Functions.h>
+#include <ext/tiny-js/TinyJS_MathFunctions.h>
 #include "js_list.h"
+#include "js_sdk.h"
 #include <iostream>
+#include <fstream>
 #include <curl/curl.h>
+
+std::string fileContent(const char* path) {
+    std::ifstream file(path);
+
+    if (!file.is_open()) {
+        exit(3);
+    }
+
+    std::string startFileContent;
+    std::string line;
+
+    while (std::getline(file, line)) {
+        startFileContent += line;
+        startFileContent += '\n';
+    }
+
+    file.close();
+
+    return startFileContent;
+}
 
 size_t writeDataCallback(void* contents, size_t size, size_t nmemb, std::string* userData) {
     size_t totalSize = size * nmemb;
@@ -18,6 +42,10 @@ std::string downloadUrlToString(const std::string& url) {
 
     std::string result;
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
+    curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
+    curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
+
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeDataCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
 
@@ -39,44 +67,27 @@ using namespace GramExt;
 
 CTinyJS *tinyJS = new CTinyJS();
 
-
-
-const std::string controllerScript = R"(
-    var outputMessageTransformers = new List();
-    var OutputMessageAddTransformer = function(transformer) {
-        outputMessageTransformers.push(transformer);
-    };
-    var TransformOutputMessage = function(message) {
-        var output = message;
-        var transformFunc = function(transformer) {
-            output = transformer(output);
-        };
-        outputMessageTransformers.forEach(transformFunc);
-        print(output);
-        global_returnValue = output;
-    };
-)";
-
 void Controller::jsPrint(void *v, void *) {
     CScriptVar *var = (CScriptVar *) v;
     std::cout << var->getParameter("text")->getString() << std::endl;
 }
 
 void Controller::initialize() {
+    registerFunctions(tinyJS);
     tinyJS->addNative("function print(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
     tinyJS->addNative("function console.log(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
+
     runScript(R"(
         print("JS Initialized 1!");
         console.log("JS Initialized 2!");
     )");
     runScript(listScript);
-    runScript(controllerScript);
+    runScript(sdkScript);
 
     std::string extensionsURLs[] = {
-        "https://raw.githubusercontent.com/demensdeum/SignMessage/refs/heads/main/extension/main.js"
+        "https://raw.githubusercontent.com/demensdeum/JokerText/refs/heads/main/extension/JokerTextMessageTransformer2.js",
+        "https://raw.githubusercontent.com/demensdeum/JokerText/refs/heads/main/extension/main.js"
     };
-
-    downloadUrlToString("http://demensdeum.com/blog/wp-content/uploads/2024/10/mediaradio-maximum-electron.png");
 
     for (std::string extensionURL : extensionsURLs) {
         std::string extension = downloadUrlToString(extensionURL);
@@ -86,8 +97,16 @@ void Controller::initialize() {
 
 std::string Controller::transformOutputText(const std::string text) {
     //return std::string(text) + "\n\nGramEXT_OutputTextTransformerTest";
-    std::string output = runScript("TransformOutputMessage(\"" + text + "\");");
-    return output;
+    std::string js = "TransformOutputMessage(\"" + text +"\");";
+    //std::string js = "TransformOutputMessage(\"\");";
+    try {
+        std::string output = runScript(js);
+        return output;
+    }
+    catch(std::exception exception) {
+        return "JS TRANSFORMER BUG: " + std::string(exception.what());
+    }
+    //return text;
 }
 
 std::string Controller::runScript(const std::string script) {

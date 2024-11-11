@@ -35,6 +35,10 @@
 #include <iostream>
 #include <math.h>
 #include <sstream>
+#include <codecvt>
+#include <locale>
+#include <algorithm>
+#include <cwctype>
 
 using namespace std;
 // ----------------------------------------------- Actual Functions
@@ -100,13 +104,96 @@ void scStringSubstring(CScriptVar *c, void *) {
         c->getReturnVar()->setString("");
 }
 
-void scStringCharAt(CScriptVar *c, void *) {
-    string str = c->getParameter("this")->getString();
-    int p = c->getParameter("pos")->getInt();
-    if (p >= 0 && p < (int)str.length())
-        c->getReturnVar()->setString(str.substr((size_t)p, (size_t)1));
-    else
+//void scStringCharAt(CScriptVar *c, void *) {
+//    string str = c->getParameter("this")->getString();
+//    int p = c->getParameter("pos")->getInt();
+//    if (p >= 0 && p < (int)str.length()) {
+//        const std::string outputStr = str.substr((size_t)p, (size_t)1);
+//        c->getReturnVar()->setString(outputStr);
+//    }
+//    else {
+//        c->getReturnVar()->setString("");
+//    }
+//}
+
+void scStringCharAt(CScriptVar* c, void*) {
+    std::string str = c->getParameter("this")->getString();
+    int pos = c->getParameter("pos")->getInt();
+
+    std::string::iterator it = str.begin();
+    int charPos = 0;
+
+    while (it != str.end() && charPos < pos) {
+
+        if ((*it & 0x80) == 0) {
+            ++it;
+        }
+        else if ((*it & 0xE0) == 0xC0) {
+            it += 2;
+        }
+        else if ((*it & 0xF0) == 0xE0) {
+            it += 3;
+        }
+        else if ((*it & 0xF8) == 0xF0) {
+            it += 4;
+        }
+        else {
+            c->getReturnVar()->setString("");
+            return;
+        }
+        ++charPos;
+    }
+
+    if (it != str.end()) {
+        auto start = it;
+        if ((*it & 0x80) == 0) {
+            ++it;
+        }
+        else if ((*it & 0xE0) == 0xC0) {
+            it += 2;
+        }
+        else if ((*it & 0xF0) == 0xE0) {
+            it += 3;
+        }
+        else if ((*it & 0xF8) == 0xF0) {
+            it += 4;
+        }
+        c->getReturnVar()->setString(std::string(start, it));
+    }
+    else {
         c->getReturnVar()->setString("");
+    }
+}
+
+void scStringToUpperCase(CScriptVar* c, void*) {
+    std::string str = c->getParameter("this")->getString();
+
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::wstring wstr = converter.from_bytes(str);
+
+
+    for (auto& wc : wstr) {
+        wc = std::towupper(wc);
+    }
+
+    str = converter.to_bytes(wstr);
+
+    c->getReturnVar()->setString(str);
+}
+
+void scStringToLowerCase(CScriptVar* c, void*) {
+    std::string str = c->getParameter("this")->getString();
+
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::wstring wstr = converter.from_bytes(str);
+
+    for (auto& wc : wstr) {
+        wc = std::towlower(wc);
+    }
+
+    str = converter.to_bytes(wstr);
+
+    c->getReturnVar()->setString(str);
 }
 
 void scStringCharCodeAt(CScriptVar *c, void *) {
@@ -136,11 +223,21 @@ void scStringSplit(CScriptVar *c, void *) {
         result->setArrayIndex(length++, new CScriptVar(str));
 }
 
-void scStringFromCharCode(CScriptVar *c, void *) {
-    char str[2];
-    str[0] = static_cast<char>(c->getParameter("char")->getInt());
-    str[1] = 0;
-    c->getReturnVar()->setString(str);
+//void scStringFromCharCode(CScriptVar *c, void *) {
+//    char str[2];
+//    str[0] = static_cast<char>(c->getParameter("char")->getInt());
+//    str[1] = 0;
+//    c->getReturnVar()->setString(str);
+//}
+
+void scStringFromCharCode(CScriptVar* c, void*) {
+    int unicodeValue = c->getParameter("char")->getInt();
+
+    // Конвертация Unicode-символа в UTF-8 строку
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+    std::string utf8str = converter.to_bytes(static_cast<char32_t>(unicodeValue));
+
+    c->getReturnVar()->setString(utf8str.c_str());
 }
 
 void scIntegerParseInt(CScriptVar *c, void *) {
@@ -256,6 +353,8 @@ void registerFunctions(CTinyJS *tinyJS) {
     tinyJS->addNative(
         "function String.indexOf(search)", scStringIndexOf,
         0); // find the position of a string in a string, -1 if not
+    tinyJS->addNative("function String.toUpperCase()", scStringToUpperCase, 0);
+    tinyJS->addNative("function String.toLowerCase()", scStringToLowerCase, 0);
     tinyJS->addNative("function String.substring(lo,hi)", scStringSubstring, 0);
     tinyJS->addNative("function String.charAt(pos)", scStringCharAt, 0);
     tinyJS->addNative("function String.charCodeAt(pos)", scStringCharCodeAt, 0);
