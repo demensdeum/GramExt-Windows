@@ -11,8 +11,10 @@
 #include <ext/Controller/Controller.h>
 #include <curl/curl.h>
 
-QListWidget* listWidget;
-QLabel* siteLabel;
+QListWidget *listWidget;
+QWidget *container;
+QLabel *label;
+QPushButton *button;
 QImage image;
 
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
@@ -23,7 +25,19 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* use
 
 void ExtensionsListWindow::resizeEvent(QResizeEvent* event) {
     QDialog::resizeEvent(event);
-    siteLabel->setPixmap(QPixmap::fromImage(image).scaled(this->width(), image.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+    int newWidth = this->width();
+    int newHeight = static_cast<int>(newWidth * 0.558804831);
+    container->setFixedSize(newWidth, newHeight);
+
+    if (!image.isNull()) {
+        QPixmap scaledPixmap = QPixmap::fromImage(image).scaled(container->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        label->setPixmap(scaledPixmap);
+        label->setGeometry(0, 0, container->width(), container->height());
+    }
+
+    label->setGeometry(0, 0, container->width(), container->height());
+    button->setGeometry(0, 0, container->width(), container->height());
 }
 
 QByteArray downloadImage(const std::string& url) {
@@ -55,24 +69,31 @@ QByteArray downloadImage(const std::string& url) {
     return imageData;
 }
 
-QLabel* ExtensionsListWindow::createClickableImageLabel(const QString& imageUrl, const QString& linkUrl) {
-    // Download image data
+QWidget* ExtensionsListWindow::createClickableImageLabel(const QString& imageUrl, const QString& linkUrl) {
     QByteArray imageData = downloadImage(imageUrl.toStdString());
 
-    // Load the image
     if (!image.loadFromData(imageData)) {
         qWarning("Failed to load image from data");
         return nullptr;
     }
 
-    QLabel* label = new QLabel(this);
-    label->setPixmap(QPixmap::fromImage(image).scaled(this->width(), this->width() * 0.558804831, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    container = new QWidget(this);
+    container->setFixedSize(this->width(), this->width() * 0.558804831);
 
-    connect(label, &QLabel::linkActivated, this, [linkUrl]() {
+    label = new QLabel(container);
+    label->setPixmap(QPixmap::fromImage(image).scaled(container->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    label->setGeometry(0, 0, container->width(), container->height());
+
+    button = new QPushButton(container);
+    button->setFlat(true);
+    button->setStyleSheet("background-color: transparent;");
+    button->setGeometry(0, 0, container->width(), container->height());
+
+    connect(button, &QPushButton::clicked, this, [linkUrl]() {
         QDesktopServices::openUrl(QUrl(linkUrl));
-        });
+    });
 
-    return label;
+    return container;
 }
 
 ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
@@ -81,7 +102,11 @@ ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
 
     listWidget = new QListWidget(this);
 
-    siteLabel = createClickableImageLabel("https://demensdeum.com/logo/demens1.png", "https://demensdeum.com");
+    createClickableImageLabel("https://demensdeum.com/logo/demens1.png", "https://demensdeum.com");
+
+    if (!container) {
+        return;
+    }
 
     QPushButton* addButton = new QPushButton("Add Extension", this);
     connect(addButton, &QPushButton::clicked, this, &ExtensionsListWindow::showAddExtensionDialog);
@@ -89,7 +114,7 @@ ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
     populateExtensionsList();
 
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(siteLabel);
+    mainLayout->addWidget(container);
     mainLayout->addWidget(listWidget);
     mainLayout->addWidget(addButton);
     setLayout(mainLayout);
@@ -97,6 +122,8 @@ ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
 
 void ExtensionsListWindow::populateExtensionsList() {
     listWidget->clear();
+    std::set<GramExt::Extension> enabledExtensions = GramExt::Controller::getEnabledExtensions();
+
     for (const auto& extension : GramExt::Controller::getExtensions()) {
         QString title = QString::fromStdString(extension.title);
         QString info = QString::fromStdString(extension.info);
@@ -117,7 +144,8 @@ void ExtensionsListWindow::populateExtensionsList() {
         QLabel* infoLabel = new QLabel(info, itemWidget);
 
         QCheckBox* checkBox = new QCheckBox(itemWidget);
-        checkBox->setChecked(false);
+        
+        checkBox->setChecked(enabledExtensions.contains(extension));
 
         connect(checkBox, &QCheckBox::stateChanged, this, [=](int state) {
             if (state == Qt::Checked) {

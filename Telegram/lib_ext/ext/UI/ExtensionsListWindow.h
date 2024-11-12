@@ -18,7 +18,7 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
-    QLabel* createClickableImageLabel(const QString& imageUrl, const QString& linkUrl);
+    QWidget* createClickableImageLabel(const QString& imageUrl, const QString& linkUrl);
     void populateExtensionsList();
     void showAddExtensionDialog();
 };
