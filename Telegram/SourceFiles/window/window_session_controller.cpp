@@ -98,6 +98,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_boxes.h"
 #include "styles/style_dialogs.h"
 #include "styles/style_layers.h" // st::boxLabel
+#include <ext/Controller/Controller.h>
+#include <ext/Extension/Extension.h>
+#include <QMessageBox>
 
 namespace Window {
 namespace {
@@ -1215,6 +1218,27 @@ auto SessionNavigation::showToast(
 
 std::shared_ptr<ChatHelpers::Show> SessionNavigation::uiShow() {
 	return parentController()->uiShow();
+}
+
+void SessionNavigation::askAboutExtensionsList() {
+	GramExt::Controller::reset();
+	for (const auto& extension : GramExt::Controller::extensions) {
+
+		QString title = QString::fromStdString(extension.title);
+
+		QMessageBox::StandardButton reply;
+		reply = QMessageBox::question(nullptr, "Extension Confirmation",
+			"Would you like to use the extension: " + title + "?",
+			QMessageBox::Yes | QMessageBox::No);
+
+		
+		if (reply == QMessageBox::Yes) {
+			GramExt::Controller::enableExtension(extension);
+		}
+		else {
+			qDebug() << "Skipped extension:" << title;
+		}
+	}
 }
 
 struct SessionController::CachedThemeKey {

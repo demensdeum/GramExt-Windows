@@ -9,6 +9,8 @@ PRIVATE
     ext/Controller/js_list.h
     ext/Controller/Controller.h
     ext/Controller/Controller.cpp
+    ext/Extension/Extension.h
+    ext/Extension/Extension.cpp
     ext/tiny-js/TinyJS_Functions.h
     ext/tiny-js/TinyJS-Functions.cpp
     ext/tiny-js/TinyJS_MathFunctions.h
@@ -19,6 +21,7 @@ PRIVATE
 
 include_directories(
     C:/tdesktop/Telegram/lib_ext/ThirdParty/curl/include
+    C:/tdesktop/Telegram/lib_ext/ThirdParty/json/include
 )
 
 target_include_directories(lib_ext
@@ -28,10 +31,6 @@ PUBLIC
 
 target_link_libraries(lib_ext
 PUBLIC
-    # C:\\tdesktop\\Telegram\\lib_ext\\ThirdParty\\curl\\src\\Debug\\curltool-d.lib
-    # C:\\tdesktop\\Telegram\\lib_ext\\ThirdParty\\curl\\lib\\Debug\\curlu-d.lib
-    # C:\\tdesktop\\Telegram\\lib_ext\\ThirdParty\\curl\\lib\\Debug\\libcurl-d_imp.lib
-    # C:\\tdesktop\\Telegram\\lib_ext\\ThirdParty\\curl\\lib\\libcurl_object.dir\\Debug\\libcurl_object.lib
     C:\\Users\\Demensdeum\\Documents\\curl-8.11.0_1-win64-mingw\\lib\\libcurl.a
     C:\\Users\\Demensdeum\\Documents\\curl-8.11.0_1-win64-mingw\\lib\\libcurl.dll.a
     desktop-app::lib_base

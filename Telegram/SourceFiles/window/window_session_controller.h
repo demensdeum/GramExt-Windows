@@ -242,6 +242,8 @@ public:
 		const SectionShow &params = SectionShow());
 	void showSettings(const SectionShow &params = SectionShow());
 
+	void askAboutExtensionsList();
+
 	void showPollResults(
 		not_null<PollData*> poll,
 		FullMsgId contextId,

@@ -72,6 +72,7 @@ public:
 	void showLogoutConfirmation();
 
 	void showSettings();
+	void askAboutExtensionsList();
 
 	[[nodiscard]] int verticalShadowTop() const;
 

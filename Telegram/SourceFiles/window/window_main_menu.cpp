@@ -820,6 +820,13 @@ void MainMenu::setupMenu() {
 		controller->showSettings();
 	});
 
+	addAction(
+		tr::lng_menu_settings(),
+		{ &st::menuIconSettings }
+	)->setClickedCallback([=] {
+		controller->askAboutExtensionsList();
+	});
+
 	_nightThemeToggle = addAction(
 		tr::lng_menu_night_mode(),
 		{ &st::menuIconNightMode }

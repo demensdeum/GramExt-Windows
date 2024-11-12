@@ -24,7 +24,10 @@ add_subdirectory(codegen)
 get_filename_component(src_loc SourceFiles REALPATH)
 get_filename_component(res_loc Resources REALPATH)
 
-include_directories(lib_ext)
+include_directories(
+lib_ext
+C:/tdesktop/Telegram/lib_ext/ThirdParty/json/include
+)
 include(cmake/telegram_options.cmake)
 include(cmake/lib_ffmpeg.cmake)
 include(cmake/lib_stripe.cmake)

@@ -8,6 +8,14 @@
 #include <fstream>
 #include <curl/curl.h>
 #include <sstream>
+#include "ext/Extension/Extension.h"
+#include <regex>
+
+using namespace GramExt;
+
+CTinyJS* tinyJS = nullptr;
+
+std::vector<GramExt::Extension> GramExt::Controller::extensions;
 
 std::string fileContent(const char* path) {
     std::ifstream file(path);
@@ -77,10 +85,6 @@ std::string downloadUrlToString(const std::string& url) {
     return result;
 }
 
-using namespace GramExt;
-
-CTinyJS *tinyJS = new CTinyJS();
-
 void Controller::jsPrint(void *v, void *) {
     CScriptVar *var = (CScriptVar *) v;
     std::cout << var->getParameter("text")->getString() << std::endl;
@@ -100,7 +104,27 @@ std::vector<std::string> parseExtensionsURLs(const std::string& extensionsURLsRa
     return extensionsURLs;
 }
 
-void Controller::initialize() {
+std::string resolveManifestURL(const std::string& repoUrl) {
+    std::regex repoRegex(R"(https://github\.com/([^/]+)/([^/]+))");
+    std::smatch match;
+
+    if (std::regex_match(repoUrl, match, repoRegex) && match.size() == 3) {
+        std::string owner = match[1].str();
+        std::string repo = match[2].str();
+
+        return "https://raw.githubusercontent.com/" + owner + "/" + repo + "/refs/heads/main/manifest.json";
+    }
+    else {
+        throw std::runtime_error("Invalid URL, can't resolve manifest.json");
+    }
+}
+
+void Controller::reset() {
+    if (tinyJS) {
+        delete tinyJS;
+        tinyJS = nullptr;
+    }
+    tinyJS = new CTinyJS();
     registerFunctions(tinyJS);
     tinyJS->addNative("function print(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
     tinyJS->addNative("function console.log(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
@@ -111,13 +135,46 @@ void Controller::initialize() {
     )");
     runScript(listScript);
     runScript(sdkScript);
+}
+
+std::string resolveExecutableURL(const Extension& extension, const std::string& executableFilename) {
+    std::string rawUrl = extension.rootUrl;
+
+    std::string githubPrefix = "https://github.com/";
+    std::string rawPrefix = "https://raw.githubusercontent.com/";
+
+    if (rawUrl.find(githubPrefix) == 0) {
+        rawUrl.replace(0, githubPrefix.length(), rawPrefix);
+    }
+
+    rawUrl += "/refs/heads/main/extension/" + executableFilename;
+
+    return rawUrl;
+}
+
+void Controller::enableExtension(Extension extension) {
+    for (std::string executableFilename : extension.executables) {
+        std::string executableURL = resolveExecutableURL(extension, executableFilename);
+        std::string extensionScript = downloadUrlToString(executableURL);
+        runScript(extensionScript);
+    }
+}
+
+void Controller::downloadExtension(std::string extensionURL) {
+    std::string manifestURL = resolveManifestURL(extensionURL);
+    std::string manifestJSON = downloadUrlToString(manifestURL);
+    Extension extension = Extension::from_json(extensionURL, manifestJSON);
+    extensions.push_back(extension);
+}
+
+void Controller::initialize() {
+    reset();
 
     std::string extensionsURLsRaw = downloadUrlToString("https://raw.githubusercontent.com/demensdeum/GramEXT-Extensions-List/refs/heads/main/extensions");
     std::vector<std::string> extensionsURLs = parseExtensionsURLs(extensionsURLsRaw);
 
     for (std::string extensionURL : extensionsURLs) {
-        std::string extension = downloadUrlToString(extensionURL);
-        runScript(extension);
+        downloadExtension(extensionURL);
     }
 }
 
