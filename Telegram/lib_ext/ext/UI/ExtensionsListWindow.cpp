@@ -9,8 +9,71 @@
 #include <QMessageBox>
 #include <ext/Extension/Extension.h>
 #include <ext/Controller/Controller.h>
+#include <curl/curl.h>
 
 QListWidget* listWidget;
+QLabel* siteLabel;
+QImage image;
+
+static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    QByteArray* imageData = static_cast<QByteArray*>(userp);
+    imageData->append(static_cast<char*>(contents), size * nmemb);
+    return size * nmemb;
+}
+
+void ExtensionsListWindow::resizeEvent(QResizeEvent* event) {
+    QDialog::resizeEvent(event);
+    siteLabel->setPixmap(QPixmap::fromImage(image).scaled(this->width(), image.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+}
+
+QByteArray downloadImage(const std::string& url) {
+    CURL* curl;
+    CURLcode res;
+    QByteArray imageData;
+
+    curl = curl_easy_init();
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &imageData);
+
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);    // Follow redirects
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);          // Prevent signals on timeout
+
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            qWarning("Failed to download image: %s", curl_easy_strerror(res));
+        }
+        curl_easy_cleanup(curl);
+    }
+    else {
+        qWarning("Failed to initialize CURL");
+    }
+    return imageData;
+}
+
+QLabel* ExtensionsListWindow::createClickableImageLabel(const QString& imageUrl, const QString& linkUrl) {
+    // Download image data
+    QByteArray imageData = downloadImage(imageUrl.toStdString());
+
+    // Load the image
+    if (!image.loadFromData(imageData)) {
+        qWarning("Failed to load image from data");
+        return nullptr;
+    }
+
+    QLabel* label = new QLabel(this);
+    label->setPixmap(QPixmap::fromImage(image).scaled(this->width(), this->width() * 0.558804831, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+
+    connect(label, &QLabel::linkActivated, this, [linkUrl]() {
+        QDesktopServices::openUrl(QUrl(linkUrl));
+        });
+
+    return label;
+}
 
 ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
     setWindowTitle("Extensions List");
@@ -18,11 +81,7 @@ ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
 
     listWidget = new QListWidget(this);
 
-    QLabel* siteLabel = new QLabel(this);
-    siteLabel->setText("<a href=\"https://demensdeum.com\">GramExt by Demens Deum</a>");
-    siteLabel->setTextFormat(Qt::RichText);
-    siteLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    siteLabel->setOpenExternalLinks(true);
+    siteLabel = createClickableImageLabel("https://demensdeum.com/logo/demens1.png", "https://demensdeum.com");
 
     QPushButton* addButton = new QPushButton("Add Extension", this);
     connect(addButton, &QPushButton::clicked, this, &ExtensionsListWindow::showAddExtensionDialog);

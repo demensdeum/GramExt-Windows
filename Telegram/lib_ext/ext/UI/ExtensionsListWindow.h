@@ -14,7 +14,11 @@ class ExtensionsListWindow : public QDialog {
 public:
     explicit ExtensionsListWindow(QWidget* parent = nullptr);
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+
 private:
+    QLabel* createClickableImageLabel(const QString& imageUrl, const QString& linkUrl);
     void populateExtensionsList();
     void showAddExtensionDialog();
 };
