@@ -9,13 +9,20 @@ ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
     QListWidget* listWidget = new QListWidget(this);
 
     for (const auto& extension : GramExt::Controller::getExtensions()) {
-        QString title = QString::fromStdString(extension.title);
         QString info = QString::fromStdString(extension.info);
 
         QWidget* itemWidget = new QWidget();
         QHBoxLayout* layout = new QHBoxLayout(itemWidget);
 
-        QLabel* titleLabel = new QLabel("<b>" + title + "</b>", itemWidget);
+        std::string rootUrl = extension.rootUrl;
+        std::string title = extension.title;
+        std::string label = "<a href=\"" + rootUrl + "\"><b>" + title + "</b></a>";
+
+        QLabel* titleLabel = new QLabel(QString::fromStdString(label), itemWidget);
+        titleLabel->setTextFormat(Qt::RichText);
+        titleLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        titleLabel->setOpenExternalLinks(true);
+
         QLabel* infoLabel = new QLabel(info, itemWidget);
 
         std::set<GramExt::Extension> enabledExtensions = GramExt::Controller::getEnabledExtensions();

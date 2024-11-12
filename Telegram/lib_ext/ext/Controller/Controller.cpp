@@ -171,6 +171,10 @@ void Controller::initialize() {
     }
 }
 
+void Controller::addExtension(std::string rootUrl) {
+
+}
+
 void Controller::reinitializeExtensions() {
     if (tinyJS) {
         delete tinyJS;

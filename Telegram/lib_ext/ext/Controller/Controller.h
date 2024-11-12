@@ -11,6 +11,7 @@ class Extension;
 class Controller {
 public:
     static void initialize();
+    static void addExtension(std::string rootUrl);
     static void enableExtension(Extension extension);
     static void disableExtension(Extension extension);
 
