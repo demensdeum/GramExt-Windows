@@ -167,12 +167,12 @@ void Controller::initialize() {
     std::vector<std::string> extensionsURLs = parseExtensionsURLs(extensionsURLsRaw);
 
     for (std::string extensionURL : extensionsURLs) {
-        downloadExtension(extensionURL);
+        addExtension(extensionURL);
     }
 }
 
-void Controller::addExtension(std::string rootUrl) {
-
+void Controller::addExtension(std::string rootURL) {
+    downloadExtension(rootURL);
 }
 
 void Controller::reinitializeExtensions() {

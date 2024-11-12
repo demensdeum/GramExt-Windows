@@ -1,34 +1,56 @@
 #include "ExtensionsListWindow.h"
+#include <QDesktopServices>
+#include <QUrl>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QInputDialog>
+#include <QString>
+#include <QMessageBox>
 #include <ext/Extension/Extension.h>
+#include <ext/Controller/Controller.h>
+
+QListWidget* listWidget;
 
 ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
     setWindowTitle("Extensions List");
+    setMinimumWidth(720);
 
-    setMinimumWidth(640);
+    listWidget = new QListWidget(this);
+    QPushButton* addButton = new QPushButton("Add Extension", this);
+    connect(addButton, &QPushButton::clicked, this, &ExtensionsListWindow::showAddExtensionDialog);
 
-    QListWidget* listWidget = new QListWidget(this);
+    populateExtensionsList();
 
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    mainLayout->addWidget(listWidget);
+    mainLayout->addWidget(addButton);
+    setLayout(mainLayout);
+}
+
+void ExtensionsListWindow::populateExtensionsList() {
+    listWidget->clear();
     for (const auto& extension : GramExt::Controller::getExtensions()) {
+        QString title = QString::fromStdString(extension.title);
         QString info = QString::fromStdString(extension.info);
+        QString rootUrl = QString::fromStdString(extension.rootUrl);
 
         QWidget* itemWidget = new QWidget();
         QHBoxLayout* layout = new QHBoxLayout(itemWidget);
 
-        std::string rootUrl = extension.rootUrl;
-        std::string title = extension.title;
-        std::string label = "<a href=\"" + rootUrl + "\"><b>" + title + "</b></a>";
-
-        QLabel* titleLabel = new QLabel(QString::fromStdString(label), itemWidget);
+        QLabel* titleLabel = new QLabel("<a href=\"" + rootUrl + "\"><b>" + title + "</b></a>", itemWidget);
         titleLabel->setTextFormat(Qt::RichText);
         titleLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
-        titleLabel->setOpenExternalLinks(true);
+        titleLabel->setOpenExternalLinks(false);
+
+        connect(titleLabel, &QLabel::linkActivated, this, [](const QString& link) {
+            QDesktopServices::openUrl(QUrl(link));
+            });
 
         QLabel* infoLabel = new QLabel(info, itemWidget);
 
-        std::set<GramExt::Extension> enabledExtensions = GramExt::Controller::getEnabledExtensions();
-
         QCheckBox* checkBox = new QCheckBox(itemWidget);
-        checkBox->setChecked(enabledExtensions.contains(extension));
+        checkBox->setChecked(false);
 
         connect(checkBox, &QCheckBox::stateChanged, this, [=](int state) {
             if (state == Qt::Checked) {
@@ -52,8 +74,13 @@ ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
         listWidget->addItem(listItem);
         listWidget->setItemWidget(listItem, itemWidget);
     }
+}
 
-    QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(listWidget);
-    setLayout(mainLayout);
+void ExtensionsListWindow::showAddExtensionDialog() {
+    bool ok;
+    QString extensionURL = QInputDialog::getText(this, "Add Extension", "Enter Extension URL:", QLineEdit::Normal, "", &ok);
+    if (ok && !extensionURL.isEmpty()) {
+        GramExt::Controller::addExtension(extensionURL.toStdString());
+        populateExtensionsList();
+    }
 }
