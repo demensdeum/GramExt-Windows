@@ -17,12 +17,20 @@ ExtensionsListWindow::ExtensionsListWindow(QWidget* parent) : QDialog(parent) {
     setMinimumWidth(720);
 
     listWidget = new QListWidget(this);
+
+    QLabel* siteLabel = new QLabel(this);
+    siteLabel->setText("<a href=\"https://demensdeum.com\">GramExt by Demens Deum</a>");
+    siteLabel->setTextFormat(Qt::RichText);
+    siteLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    siteLabel->setOpenExternalLinks(true);
+
     QPushButton* addButton = new QPushButton("Add Extension", this);
     connect(addButton, &QPushButton::clicked, this, &ExtensionsListWindow::showAddExtensionDialog);
 
     populateExtensionsList();
 
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    mainLayout->addWidget(siteLabel);
     mainLayout->addWidget(listWidget);
     mainLayout->addWidget(addButton);
     setLayout(mainLayout);

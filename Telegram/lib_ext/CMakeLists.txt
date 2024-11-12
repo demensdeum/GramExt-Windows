@@ -41,5 +41,4 @@ PUBLIC
     desktop-app::lib_ext
     desktop-app::external_qt_static_plugins
     desktop-app::external_qt
-    desktop-app::external_qr_code_generator
 )
