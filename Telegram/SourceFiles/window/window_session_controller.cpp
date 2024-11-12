@@ -100,6 +100,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_layers.h" // st::boxLabel
 #include <ext/Controller/Controller.h>
 #include <ext/Extension/Extension.h>
+#include <ext/UI/ExtensionsListWindow.h>
 #include <QMessageBox>
 
 namespace Window {
@@ -1220,25 +1221,24 @@ std::shared_ptr<ChatHelpers::Show> SessionNavigation::uiShow() {
 	return parentController()->uiShow();
 }
 
-void SessionNavigation::askAboutExtensionsList() {
-	GramExt::Controller::reset();
-	for (const auto& extension : GramExt::Controller::extensions) {
+void SessionNavigation::showExtensionsList() {
+	ExtensionsListWindow *extensionsListWindow = new ExtensionsListWindow();
+	extensionsListWindow->show();
+	//GramExt::Controller::reset();
+	//for (const auto& extension : GramExt::Controller::getExtensions()) {
 
-		QString title = QString::fromStdString(extension.title);
+	//	QString title = QString::fromStdString(extension.title);
 
-		QMessageBox::StandardButton reply;
-		reply = QMessageBox::question(nullptr, "Extension Confirmation",
-			"Would you like to use the extension: " + title + "?",
-			QMessageBox::Yes | QMessageBox::No);
+	//	QMessageBox::StandardButton reply;
+	//	reply = QMessageBox::question(nullptr, "Extension Confirmation",
+	//		"Would you like to use the extension: " + title + "?",
+	//		QMessageBox::Yes | QMessageBox::No);
 
-		
-		if (reply == QMessageBox::Yes) {
-			GramExt::Controller::enableExtension(extension);
-		}
-		else {
-			qDebug() << "Skipped extension:" << title;
-		}
-	}
+	//	
+	//	if (reply == QMessageBox::Yes) {
+	//		GramExt::Controller::enableExtension(extension);
+	//	}
+	//}
 }
 
 struct SessionController::CachedThemeKey {

@@ -821,10 +821,10 @@ void MainMenu::setupMenu() {
 	});
 
 	addAction(
-		tr::lng_menu_settings(),
+		tr::lng_menu_extensions(),
 		{ &st::menuIconSettings }
 	)->setClickedCallback([=] {
-		controller->askAboutExtensionsList();
+		controller->showExtensionsList();
 	});
 
 	_nightThemeToggle = addAction(

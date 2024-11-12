@@ -13,6 +13,7 @@
 
 using namespace GramExt;
 
+std::set<Extension> enabledExtensions;
 CTinyJS* tinyJS = nullptr;
 
 std::vector<GramExt::Extension> GramExt::Controller::extensions;
@@ -119,24 +120,6 @@ std::string resolveManifestURL(const std::string& repoUrl) {
     }
 }
 
-void Controller::reset() {
-    if (tinyJS) {
-        delete tinyJS;
-        tinyJS = nullptr;
-    }
-    tinyJS = new CTinyJS();
-    registerFunctions(tinyJS);
-    tinyJS->addNative("function print(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
-    tinyJS->addNative("function console.log(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
-
-    runScript(R"(
-        print("JS Initialized 1!");
-        console.log("JS Initialized 2!");
-    )");
-    runScript(listScript);
-    runScript(sdkScript);
-}
-
 std::string resolveExecutableURL(const Extension& extension, const std::string& executableFilename) {
     std::string rawUrl = extension.rootUrl;
 
@@ -152,12 +135,22 @@ std::string resolveExecutableURL(const Extension& extension, const std::string& 
     return rawUrl;
 }
 
+std::vector<Extension> Controller::getExtensions() {
+    return Controller::extensions;
+}
+
+std::set<Extension> Controller::getEnabledExtensions() {
+    return enabledExtensions;
+}
+
 void Controller::enableExtension(Extension extension) {
-    for (std::string executableFilename : extension.executables) {
-        std::string executableURL = resolveExecutableURL(extension, executableFilename);
-        std::string extensionScript = downloadUrlToString(executableURL);
-        runScript(extensionScript);
-    }
+    enabledExtensions.insert(extension);
+    reinitializeExtensions();
+}
+
+void Controller::disableExtension(Extension extension) {
+    enabledExtensions.erase(extension);
+    reinitializeExtensions();
 }
 
 void Controller::downloadExtension(std::string extensionURL) {
@@ -168,13 +161,39 @@ void Controller::downloadExtension(std::string extensionURL) {
 }
 
 void Controller::initialize() {
-    reset();
+    reinitializeExtensions();
 
     std::string extensionsURLsRaw = downloadUrlToString("https://raw.githubusercontent.com/demensdeum/GramEXT-Extensions-List/refs/heads/main/extensions");
     std::vector<std::string> extensionsURLs = parseExtensionsURLs(extensionsURLsRaw);
 
     for (std::string extensionURL : extensionsURLs) {
         downloadExtension(extensionURL);
+    }
+}
+
+void Controller::reinitializeExtensions() {
+    if (tinyJS) {
+        delete tinyJS;
+        tinyJS = nullptr;
+    }
+    tinyJS = new CTinyJS();
+    registerFunctions(tinyJS);
+    tinyJS->addNative("function print(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
+    tinyJS->addNative("function console.log(text)", reinterpret_cast<JSCallback>(Controller::jsPrint), nullptr);
+
+    runScript(R"(
+        print("JS Initialized 1!");
+        console.log("JS Initialized 2!");
+    )");
+    runScript(listScript);
+    runScript(sdkScript);
+
+    for (Extension enabledExtension : enabledExtensions) {
+        for (std::string executableFilename : enabledExtension.executables) {
+            std::string executableURL = resolveExecutableURL(enabledExtension, executableFilename);
+            std::string extensionScript = downloadUrlToString(executableURL);
+            runScript(extensionScript);
+        }
     }
 }
 

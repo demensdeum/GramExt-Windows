@@ -211,17 +211,9 @@ void scStringSplit(CScriptVar *c, void *) {
         result->setArrayIndex(length++, new CScriptVar(str));
 }
 
-//void scStringFromCharCode(CScriptVar *c, void *) {
-//    char str[2];
-//    str[0] = static_cast<char>(c->getParameter("char")->getInt());
-//    str[1] = 0;
-//    c->getReturnVar()->setString(str);
-//}
-
 void scStringFromCharCode(CScriptVar* c, void*) {
     int unicodeValue = c->getParameter("char")->getInt();
 
-    // Конвертация Unicode-символа в UTF-8 строку
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
     std::string utf8str = converter.to_bytes(static_cast<char32_t>(unicodeValue));
 
